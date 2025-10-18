@@ -28,7 +28,7 @@ It also uses a **Backend-for-Frontend (BFF)** pattern to streamline communicatio
 - [PhotoGallery.Bff](https://github.com/scsfdev/PhotoGallery.Bff)  
 - [PhotoGallery (Frontend)](https://github.com/scsfdev/PhotoGallery)
 - [Docker Compose](https://github.com/scsfdev/PhotoGallery-Project/blob/main/docker-compose.yml)
-- 
+
 🧩 Currently updating **UserService** and **AuthService**.  
 ✨ Frontend development will continue soon.
 
