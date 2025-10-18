@@ -1,0 +1,259 @@
+# Docker Compose file for PhotoGallery application
+# Version: 1.0
+
+services:
+  # -- Database (Azure SQL Edge) --
+  sqldbedge:
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: sqldbedge
+    cap_add:
+      - SYS_PTRACE
+    env_file:
+      - .env
+    environment:
+      ACCEPT_EULA: "1"
+      MSSQL_SA_PASSWORD: ${SQL_DB_PWD}
+    ports:
+      - "1433:1433"
+    networks:
+      - photogallery-net
+    volumes:
+      - sqlDb:/var/opt/mssql
+    # For some reasons, I cannot perform below health check on this sql edge.
+    # So for other services, I will just use services_started
+    #restart: unless-stopped
+    #restart: always
+    # HEALTH CHECK DEFINITION: Ensure SQL server is ready to accept connections
+    # healthcheck:
+      # test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${SQL_DB_PWD}", "-Q", "select 1"]
+      # interval: 10s
+      # timeout: 10s
+      # retries: 20
+      # start_period: 60s
+
+  # -- Message Queue (RabbitMQ) --
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # for AMQP services
+      - "15672:15672" # for Ui
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - photogallery-net
+    # IMPORTANT: Healthcheck to ensure the RabbitMQ service is fully up and running.
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s # 15s for a safer startup buffer
+      
+      
+  # -- PhotoService --
+  photoservice:
+    build:
+      context: .
+      dockerfile: PhotoService/Dockerfile
+    container_name: photoservice
+    ports:
+      - "5002:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Google Storage setting.
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/photo-album.json
+      
+      # Connection string.
+      - ConnectionStrings__PhotoDb=Server=sqldbedge,1433;Database=PhotoServiceDb;User Id=sa;Password=${SQL_DB_PWD};TrustServerCertificate=True;
+      
+      # RabbitMQ settings.
+      - RabbitMQ__HostName=${RABBITMQ_HOSTNAME}
+      - RabbitMQ__UserName=${RABBITMQ_USERNAME}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - RabbitMQ__Port=${RABBITMQ_PORT}
+      
+      # JWT settings.
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMins=${JWT_EXPIRY}
+    # Waits until sqldbedge (started) and rabbitmq 'healthy'
+    depends_on:
+      sqldbedge:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - photogallery-net
+    volumes:
+      # Mount GCS service account to container
+      - ./Keys/photo-album.json:/app/photo-album.json
+
+
+  # -- CategoryService --
+  categoryservice:
+    build:
+      context: .
+      dockerfile: CategoryService/Dockerfile
+    container_name: categoryservice
+    ports:
+      - "5003:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Connection string.
+      - ConnectionStrings__CategoryDb=Server=sqldbedge,1433;Database=CategoryServiceDb;User Id=sa;Password=${SQL_DB_PWD};TrustServerCertificate=True;
+      
+      # RabbitMQ settings.
+      - RabbitMQ__HostName=${RABBITMQ_HOSTNAME}
+      - RabbitMQ__UserName=${RABBITMQ_USERNAME}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - RabbitMQ__Port=${RABBITMQ_PORT}
+      
+      # JWT settings.
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMins=${JWT_EXPIRY}
+    # Waits until sqldbedge (started) and rabbitmq 'healthy'
+    depends_on:
+      sqldbedge:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - photogallery-net
+
+
+
+  # -- AuthService --
+  authservice:
+    build:
+      context: .
+      dockerfile: AuthService/Dockerfile
+    container_name: authservice
+    ports:
+      - "5001:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Connection string.
+      - ConnectionStrings__AuthDb=Server=sqldbedge,1433;Database=AuthServiceDb;User Id=sa;Password=${SQL_DB_PWD};TrustServerCertificate=True;
+      
+      # RabbitMQ settings.
+      - RabbitMQ__HostName=${RABBITMQ_HOSTNAME}
+      - RabbitMQ__UserName=${RABBITMQ_USERNAME}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - RabbitMQ__Port=${RABBITMQ_PORT}
+      
+      # JWT settings.
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMins=${JWT_EXPIRY}
+    # Waits until sqldbedge (started) and rabbitmq 'healthy'
+    depends_on:
+      sqldbedge:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - photogallery-net
+      
+    
+  # -- UserService --
+  userservice:
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+    container_name: userservice
+    ports:
+      - "5004:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Connection string.
+      - ConnectionStrings__UserProfileDb=Server=sqldbedge,1433;Database=UserServiceDb;User Id=sa;Password=${SQL_DB_PWD};TrustServerCertificate=True;
+      
+      # RabbitMQ settings.
+      - RabbitMQ__HostName=${RABBITMQ_HOSTNAME}
+      - RabbitMQ__UserName=${RABBITMQ_USERNAME}
+      - RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - RabbitMQ__Port=${RABBITMQ_PORT}
+      
+      # JWT settings.
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMins=${JWT_EXPIRY}
+    # Waits until sqldbedge (started) and rabbitmq 'healthy'
+    depends_on:
+      sqldbedge:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      authservice:
+        condition: service_started # Sequence enforcement
+    networks:
+      - photogallery-net    
+      
+      
+  # -- BffService --
+  bff:
+    build:
+      context: .
+      dockerfile: PhotoGallery.Bff/Dockerfile
+    container_name: bff
+    ports:
+      - "5000:8080"
+    env_file:
+      - .env
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # JWT settings.
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMins=${JWT_EXPIRY}
+      
+      # Microservice URL
+      - Services__AuthService=http://authservice:8080
+      - Services__UserService=http://userservice:8080
+      - Services__PhotoService=http://photoservice:8080
+      - Services__CategoryService=http://categoryservice:8080
+    # Waits for all sequenced backend services to be started
+    depends_on:
+      photoservice:
+        condition: service_started
+      categoryservice:
+        condition: service_started
+      authservice:
+        condition: service_started
+      userservice:
+        condition: service_started
+    networks:
+      - photogallery-net
+      
+      
+
+# -- Shared Network --
+networks:
+  photogallery-net:
+    driver: bridge
+
+# -- Volumes --
+volumes:
+  sqlDb:
+    external: true
