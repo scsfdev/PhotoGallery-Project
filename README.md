@@ -3,12 +3,14 @@
 The **PhotoGallery** application provides a modern platform for managing and exploring photos.  
 Users can **view photos by categories, like photos, and download them**, while admin users can perform **CRUD operations** on photos, categories, and users.  
 The project uses a **microservices architecture** for scalability and maintainability and follows **Clean Architecture** principles.  
-A **Backend-for-Frontend (BFF)** pattern streamlines communication between the frontend and backend services.
+
+It also uses a **Backend-for-Frontend (BFF)** pattern to streamline communication between the frontend and backend services.
+
 
 ### 🛠️ Technologies Used
 - **ASP.NET Core REST API**  
 - **React with TypeScript**  
-- **SQL Server** (using **Azure SQL Edge** running in Docker)  
+- **SQL Server** (using **Azure SQL Edge** running in Docker — the only supported edition on my Snapdragon CPU laptop)  
 - **Entity Framework Core**  
 - **Backend-for-Frontend (BFF)** pattern  
 - **Docker**  
@@ -25,7 +27,8 @@ A **Backend-for-Frontend (BFF)** pattern streamlines communication between the f
 - [AuthService](https://github.com/scsfdev/AuthService)  
 - [PhotoGallery.Bff](https://github.com/scsfdev/PhotoGallery.Bff)  
 - [PhotoGallery (Frontend)](https://github.com/scsfdev/PhotoGallery)
-
+- [Docker Compose](https://github.com/scsfdev/PhotoGallery-Project/blob/main/docker-compose.yml)
+- 
 🧩 Currently updating **UserService** and **AuthService**.  
 ✨ Frontend development will continue soon.
 
