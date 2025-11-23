@@ -29,8 +29,13 @@ It also uses a **Backend-for-Frontend (BFF)** pattern to streamline communicatio
 - [PhotoGallery (Frontend)](https://github.com/scsfdev/PhotoGallery)
 - [Docker Compose](https://github.com/scsfdev/PhotoGallery-Project/blob/main/docker-compose.yml)
 
-🧩 Currently updating **UserService** and **AuthService**.  
-✨ Frontend development will continue soon.
+**[Progress as of 2025 Nov]**  
+🧩 Currently updating **Frontend (React)**.  
+✨ API side exception handling, logging (Middleware pipeline) will be coming once Frontend up and running.
+
+I am still doing self-learn on all required skills.  
+The approach I use for these projects are "Make it up and runnign first, and fine-tune it later".  
+A bit messy in layers and patterns, I will try my best to fine-tune it later once all projects are up and running smoothly.
 
 ---
 
